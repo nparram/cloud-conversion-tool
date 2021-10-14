@@ -49,8 +49,13 @@ class AuthLoginResource(Resource):
             token = create_access_token(identity=usuario.id)
             return {"mensaje": "Inicio de sesión exitoso", "token": token}
 
-api.add_resource(AuthSignupResource, '/api/auth/signup')
-api.add_resource(AuthLoginResource, '/api/auth/login')
+class HealthResource(Resource):
+    def get(self):
+        return {"status: UP"}, 200
+
+api.add_resource(HealthResource, '/check')
+api.add_resource(AuthSignupResource, '/signup')
+api.add_resource(AuthLoginResource, '/login')
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', ssl_context='adhoc')
