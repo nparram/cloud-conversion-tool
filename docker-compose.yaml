@@ -1,20 +1,47 @@
 version: "3.2"
 services:
-  
   conversor:
     volumes:
-        - ./conversor/:/mnt/
+      - ./conversor/:/mnt/
     build: ./conversor
-    working_dir: /backend/
-    command: sh run.sh
+    working_dir: /backend
+    command: bash -c "python build_database.py && python api.py"
+    depends_on:
+      - db
+    environment:
+      STAGE: test
+      SQLALCHEMY_DATABASE_URI: postgresql+psycopg2://test:test@db/test
+    networks:
+      - default
+    ports:
+      - 5000:5000
+
+  db:
+    environment:
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+      POSTGRES_DB: test
+    image: postgres:latest
+    networks:
+      - default
+    ports:
+      - 5432:5432
+    restart: always
+    volumes:
+      - postgresql-volume:/var/lib/postgresql/data
+
+ 
 
   nginx:
     image: nginx:latest
     ports:
       - 5001:443
     volumes:
-        - ./nginx/nginx-proxy.conf:/etc/nginx/conf.d/default.conf:ro
-        - ./nginx/localhost.crt:/etc/ssl/certs/localhost.crt
-        - ./nginx/localhost.key:/etc/ssl/private/localhost.key
+      - ./nginx/nginx-proxy.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/localhost.crt:/etc/ssl/certs/localhost.crt
+      - ./nginx/localhost.key:/etc/ssl/private/localhost.key
     depends_on:
-        - conversor
+      - conversor
+volumes: 
+  postgresql-volume:
+    external: true     

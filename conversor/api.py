@@ -5,7 +5,7 @@ from flask_restful import Api, Resource
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////mnt/conversor.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg2://test:test@db/test'
 db = SQLAlchemy(app)
 ma = Marshmallow(app)
 app.config["JWT_SECRET_KEY"] = "cloud-conversor-jwt"
