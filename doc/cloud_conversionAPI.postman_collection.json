@@ -105,6 +105,35 @@
 				}
 			},
 			"response": []
+		},
+		{
+			"name": "postTasks",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"filename\": \"c:\\temp\\filename2.wav\",\n    \"newFormat\": \"mp3\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://localhost:5001/api/tasks",
+					"protocol": "https",
+					"host": [
+						"localhost"
+					],
+					"port": "5001",
+					"path": [
+						"api",
+						"tasks"
+					]
+				}
+			},
+			"response": []
 		}
 	]
 }

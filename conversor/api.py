@@ -1,8 +1,10 @@
-from flask import Flask, request
+from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
 from flask_restful import Api, Resource
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required
+from sqlalchemy.exc import IntegrityError
+from datetime import datetime
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////mnt/conversor.db'
@@ -44,25 +46,39 @@ users_schema = UserSchema(many=True)
 
 class AuthSignupResource(Resource):
     def post(self):
+        if request.get_json() is None:
+            return {"error": "No request provided."}, 400
+
+        if request.json['password1'] != request.json['password2']:
+            return {"error": "password1 and password2 are not equal."}, 400
+
         new_user = User(
             username = request.json['username'],
             password = request.json['password1'],
             email = request.json['email']
         )
         db.session.add(new_user)
-        db.session.commit()
+        try:
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
+            return {"error": "User already exists."}, 409
+
         return user_schema.dump(new_user)
 
 class AuthLoginResource(Resource):
     def post(self):
+        if request.get_json() is None:
+            return {"error": "No request provided."}, 400
+
         user = User.query.filter(User.username == request.json["username"],
                                        User.password == request.json["password"]).first()
         db.session.commit()
         if user is None:
-            return "El usuario no existe", 404
+            return {"error": "User does not exist"}, 404
         else:
-            token = create_access_token(identity=user.id)
-            return {"mensaje": "Inicio de sesión exitoso", "token": token}
+            token = create_access_token(identity=user.email)
+            return {"success": "Successful login.", "token": token}
 
 class HealthResource(Resource):
     def get(self):
@@ -71,22 +87,47 @@ class HealthResource(Resource):
 class TasksResource(Resource):
     @jwt_required()
     def get(self):
-        return {"status": "ok"}, 200
+        tasks = Task.query.all()
+        db.session.commit()
+        response = [task_schema.dump(t) for t in tasks]
+        return jsonify(response)
 
+    @jwt_required()
     def post(self):
-        return {"status": "ok"}, 200
+        if request.get_json() is None:
+            return {"error": "No request provided."}, 400
+
+        new_task = Task(
+            filename = request.json['filename'],
+            timestap = datetime.now(),
+            status = 'uploaded',
+            new_format = request.json['newFormat'],
+            usuario = 1
+        )
+        db.session.add(new_task)
+        try:
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
+            return {"error": "Task is already registered."}, 409
+
+        return {"success": "Task was successfully created"}, 200
 
 class TaskResource(Resource):
+    @jwt_required()
     def get(self, id_task):
         return {"status": "ok"}, 200
 
+    @jwt_required()
     def put(self, id_task):
         return {"status": "ok"}, 200
 
+    @jwt_required()
     def delete(self, id_task):
         return {"status": "ok"}, 200
 
 class FileResource(Resource):
+    @jwt_required()
     def get(self, file):
         return {"status": "ok"}, 200
 
