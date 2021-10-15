@@ -6,8 +6,6 @@ services:
     build: ./conversor
     working_dir: /backend
     command: bash -c "python build_database.py && python api.py"
-    depends_on:
-      - db
     environment:
       STAGE: test
       SQLALCHEMY_DATABASE_URI: postgresql+psycopg2://test:test@db/test
@@ -15,6 +13,8 @@ services:
       - default
     ports:
       - 5000:5000
+    depends_on:
+      - db
 
   db:
     environment:
@@ -28,9 +28,7 @@ services:
       - 5432:5432
     restart: always
     volumes:
-      - postgresql-volume:/var/lib/postgresql/data
-
- 
+      - ./pgdata:/var/lib/postgresql/data
 
   nginx:
     image: nginx:latest
@@ -42,6 +40,4 @@ services:
       - ./nginx/localhost.key:/etc/ssl/private/localhost.key
     depends_on:
       - conversor
-volumes: 
-  postgresql-volume:
-    external: true     
+    
