@@ -1,6 +1,6 @@
 # cloud-conversion-tool
 
-### Prerequisistos:
+### Prerrequisitos:
 
 docker
 
