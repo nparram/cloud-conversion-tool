@@ -69,7 +69,7 @@ class TaskResource(Resource):
     def delete(self, id_task):
         return {"status": "ok"}, 200
 
-class FileResource():
+class FileResource(Resource):
     def get(self, file):
         return {"status": "ok"}, 200
 
