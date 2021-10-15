@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from datetime import datetime
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////mnt/conversor.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg2://test:test@db/test'
 db = SQLAlchemy(app)
 ma = Marshmallow(app)
 app.config["JWT_SECRET_KEY"] = "cloud-conversor-jwt"

@@ -6,3 +6,4 @@ SQLAlchemy
 marshmallow-sqlalchemy
 flask-jwt-extended
 pyopenssl
+psycopg2
