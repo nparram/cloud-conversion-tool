@@ -2,11 +2,10 @@ from flask import Flask, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
 from flask_restful import Api, Resource
-from flask_jwt_extended import JWTManager
-from flask_jwt_extended import create_access_token
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////mnt/usuarios.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////mnt/conversor.db'
 db = SQLAlchemy(app)
 ma = Marshmallow(app)
 app.config["JWT_SECRET_KEY"] = "cloud-conversor-jwt"
@@ -53,9 +52,32 @@ class HealthResource(Resource):
     def get(self):
         return {"status": "UP"}, 200
 
+class TaskResource(Resource):
+    @jwt_required()
+    def get(self):
+        return {"status": "ok"}, 200
+
+    def post(self):
+        return {"status": "ok"}, 200
+
+    def get(self, id_task):
+        return {"status": "ok"}, 200
+
+    def put(self, id_task):
+        return {"status": "ok"}, 200
+
+    def delete(self, id_task):
+        return {"status": "ok"}, 200
+
+class FileResource():
+    def get(self, file):
+        return {"status": "ok"}, 200
+
 api.add_resource(HealthResource, '/api/auth/check')
 api.add_resource(AuthSignupResource, '/api/auth/signup')
 api.add_resource(AuthLoginResource, '/api/auth/login')
+api.add_resource(TaskResource, '/api/tasks')
+api.add_resource(FileResource, '/api/files')
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', ssl_context='adhoc')

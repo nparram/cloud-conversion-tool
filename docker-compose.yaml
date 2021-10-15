@@ -1,10 +1,10 @@
 version: "3.2"
 services:
   
-  usuarios:
+  conversor:
     volumes:
-        - ./usuarios/:/mnt/
-    build: ./usuarios
+        - ./conversor/:/mnt/
+    build: ./conversor
     working_dir: /backend/
     command: sh run.sh
 
@@ -17,4 +17,4 @@ services:
         - ./nginx/localhost.crt:/etc/ssl/certs/localhost.crt
         - ./nginx/localhost.key:/etc/ssl/private/localhost.key
     depends_on:
-        - usuarios
+        - conversor
