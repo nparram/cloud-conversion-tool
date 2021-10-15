@@ -16,7 +16,7 @@ api = Api(app)
 class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     filename = db.Column(db.String(50))
-    timestap = db.Column(db.Column(db.DateTime))
+    timestap = db.Column(db.DateTime)
     status = db.Column(db.String(50))
     new_format = db.Column(db.String(50))
     usuario = db.Column(db.Integer, db.ForeignKey("user.id"))
