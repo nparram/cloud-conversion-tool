@@ -51,9 +51,9 @@ class AuthLoginResource(Resource):
 
 class HealthResource(Resource):
     def get(self):
-        return {"status: UP"}, 200
+        return {"status": "UP"}, 200
 
-api.add_resource(HealthResource, '/check')
+api.add_resource(HealthResource, '/api/auth/check')
 api.add_resource(AuthSignupResource, '/signup')
 api.add_resource(AuthLoginResource, '/login')
 
