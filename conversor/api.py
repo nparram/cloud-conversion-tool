@@ -13,11 +13,27 @@ app.config["JWT_SECRET_KEY"] = "cloud-conversor-jwt"
 jwt = JWTManager(app)
 api = Api(app)
 
+class Task(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    filename = db.Column(db.String(50))
+    timestap = db.Column(db.Column(db.DateTime))
+    status = db.Column(db.String(50))
+    new_format = db.Column(db.String(50))
+    usuario = db.Column(db.Integer, db.ForeignKey("user.id"))
+
+class TaskSchema(ma.SQLAlchemyAutoSchema):
+    class Meta:
+        fields = ("id", "filename", "timestap","status","new_format")
+task_schema = TaskSchema()
+tasks_schema = TaskSchema(many=True)
+
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True)
     password = db.Column(db.String(50))
     email = db.Column(db.String(50), unique=True)
+    tasks = db.relationship('Task', cascade='all, delete, delete-orphan')
+
 
 class UserSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
