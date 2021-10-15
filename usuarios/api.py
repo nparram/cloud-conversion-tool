@@ -3,7 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
 from flask_restful import Api, Resource
 from flask_jwt_extended import JWTManager
-from flask_jwt_extended import jwt_required
+from flask_jwt_extended import create_access_token
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////mnt/usuarios.db'
@@ -41,12 +41,12 @@ class AuthSignupResource(Resource):
 class AuthLoginResource(Resource):
     def post(self):
         user = User.query.filter(User.username == request.json["username"],
-                                       User.contrasena == request.json["password"]).first()
+                                       User.password == request.json["password"]).first()
         db.session.commit()
         if user is None:
             return "El usuario no existe", 404
         else:
-            token = create_access_token(identity=usuario.id)
+            token = create_access_token(identity=user.id)
             return {"mensaje": "Inicio de sesión exitoso", "token": token}
 
 class HealthResource(Resource):
@@ -54,8 +54,8 @@ class HealthResource(Resource):
         return {"status": "UP"}, 200
 
 api.add_resource(HealthResource, '/api/auth/check')
-api.add_resource(AuthSignupResource, '/signup')
-api.add_resource(AuthLoginResource, '/login')
+api.add_resource(AuthSignupResource, '/api/auth/signup')
+api.add_resource(AuthLoginResource, '/api/auth/login')
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', ssl_context='adhoc')
