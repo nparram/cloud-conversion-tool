@@ -52,7 +52,7 @@ class HealthResource(Resource):
     def get(self):
         return {"status": "UP"}, 200
 
-class TaskResource(Resource):
+class TasksResource(Resource):
     @jwt_required()
     def get(self):
         return {"status": "ok"}, 200
@@ -60,6 +60,7 @@ class TaskResource(Resource):
     def post(self):
         return {"status": "ok"}, 200
 
+class TaskResource(Resource):
     def get(self, id_task):
         return {"status": "ok"}, 200
 
@@ -76,7 +77,8 @@ class FileResource(Resource):
 api.add_resource(HealthResource, '/api/auth/check')
 api.add_resource(AuthSignupResource, '/api/auth/signup')
 api.add_resource(AuthLoginResource, '/api/auth/login')
-api.add_resource(TaskResource, '/api/tasks')
+api.add_resource(TasksResource, '/api/tasks')
+api.add_resource(TaskResource, '/api/tasks/<int:id_task>')
 api.add_resource(FileResource, '/api/files')
 
 if __name__ == '__main__':
