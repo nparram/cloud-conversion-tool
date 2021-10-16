@@ -1,5 +1,5 @@
 import os
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
 from flask_restful import Api, Resource
@@ -136,16 +136,52 @@ class TaskResource(Resource):
 
     @jwt_required()
     def put(self, id_task):
-        return {"status": "ok"}, 200
+        task = Task.query.get_or_404(id_task, "Task not exists")
+        '''
+        if task.status == 'processed':
+            # TODO: ELIMINAR ARCHIVO YA PROCESADO
+            task.filename        
+        '''
+        task.new_format = request.json["newFormat"]
+        task.status = 'uploaded'
+
+        try:
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
+            return {"Error": "Task not updated."}, 404
+
+        return task_schema.dump(task)
 
     @jwt_required()
     def delete(self, id_task):
-        return {"status": "ok"}, 200
+        task = Task.query.get_or_404(id_task, "Task not exists")
+        if task is not None:
+            db.session.delete(task)
+            try:
+                db.session.commit()
+            except IntegrityError:
+                db.session.rollback()
+                return {"Error": "Task not deleted."}, 404
+        else:
+            return {"Error": "Task not found."}, 404
+
+        return {"Success": "Task was successfully deleted"}, 200
 
 class FileResource(Resource):
     @jwt_required()
-    def get(self, file):
-        return {"status": "ok"}, 200
+    def get(self):
+        try:
+            path_to_file = "ciletoMP3.mp3"
+
+            return send_file(
+                path_to_file,
+                mimetype="audio/mp3",
+                as_attachment=True,
+                attachment_filename="ciletoMP3.mp3")
+        except Exception as e:
+            return str(e)
+
 
 api.add_resource(HealthResource, '/api/auth/check')
 api.add_resource(AuthSignupResource, '/api/auth/signup')
