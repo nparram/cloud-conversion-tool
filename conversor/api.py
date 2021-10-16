@@ -130,9 +130,7 @@ class TaskResource(Resource):
     @jwt_required()
     def get(self, id_task):
         task=Task.query.get_or_404(id_task)
-        db.session.commit()
-        response = [task_schema.dump(task)]
-        return jsonify(response)
+        return task_schema.dump(task)
 
     @jwt_required()
     def put(self, id_task):
