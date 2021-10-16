@@ -126,11 +126,37 @@ class TaskResource(Resource):
 
     @jwt_required()
     def put(self, id_task):
-        return {"status": "ok"}, 200
+        task = Task.query.get_or_404(id_task, "Task not exists")
+        '''
+        if task.status == 'processed':
+            # TODO: ELIMINAR ARCHIVO YA PROCESADO
+            task.filename        
+        '''
+        task.new_format = request.json["newFormat"]
+        task.status = 'uploaded'
+
+        try:
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
+            return {"Error": "Task not updated."}, 404
+
+        return task_schema.dump(task)
 
     @jwt_required()
     def delete(self, id_task):
-        return {"status": "ok"}, 200
+        task = Task.query.get_or_404(id_task, "Task not exists")
+        if task is not None:
+            db.session.delete(task)
+            try:
+                db.session.commit()
+            except IntegrityError:
+                db.session.rollback()
+                return {"Error": "Task not deleted."}, 404
+        else:
+            return {"Error": "Task not found."}, 404
+
+        return {"Success": "Task was successfully deleted"}, 200
 
 class FileResource(Resource):
     @jwt_required()
