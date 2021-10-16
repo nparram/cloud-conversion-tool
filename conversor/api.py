@@ -91,24 +91,31 @@ class HealthResource(Resource):
 class TasksResource(Resource):
     @jwt_required()
     def get(self):
+        """
         tasks = Task.query.all()
         db.session.commit()
         response = [task_schema.dump(t) for t in tasks]
+        return jsonify(response)"""
+        usuario=User.query.get_or_404(request.json["id_usuario"])
+        db.session.commit()
+        response = [task_schema.dump(t) for t in usuario.tasks]
         return jsonify(response)
+
 
     @jwt_required()
     def post(self):
+        """
         uploaded_file = request.files['file']
         filename = secure_filename(uploaded_file.filename)
         if uploaded_file.filename != '':
             uploaded_file.save(os.path.join(app.config['UPLOAD_PATH'], filename))
-
+        """
         new_task = Task(
-            filename = filename,
+            filename = request.json["filename"],
             timestap = datetime.now(),
             status = 'uploaded',
-            new_format = 'newFormat',
-            usuario = 1
+            new_format = request.json["new_format"],
+            usuario = request.json["id_usuario"]
         )
         db.session.add(new_task)
         try:
@@ -122,7 +129,10 @@ class TasksResource(Resource):
 class TaskResource(Resource):
     @jwt_required()
     def get(self, id_task):
-        return {"status": "ok"}, 200
+        task=Task.query.get_or_404(id_task)
+        db.session.commit()
+        response = [task_schema.dump(task)]
+        return jsonify(response)
 
     @jwt_required()
     def put(self, id_task):
