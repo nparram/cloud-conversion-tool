@@ -3,6 +3,7 @@ services:
   conversor:
     volumes:
       - ./conversor/:/mnt/
+      - ./files/:/files/
     build: ./conversor
     working_dir: /backend
     command: bash -c "python build_database.py && python api.py"

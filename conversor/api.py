@@ -1,3 +1,4 @@
+import os
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
@@ -5,12 +6,15 @@ from flask_restful import Api, Resource
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg2://test:test@db/test'
 db = SQLAlchemy(app)
 ma = Marshmallow(app)
 app.config["JWT_SECRET_KEY"] = "cloud-conversor-jwt"
+app.config['UPLOAD_PATH'] = '/files/uploads'
+app.config['MAX_CONTENT_LENGTH'] = 1024 * 1024 * 1024
 
 jwt = JWTManager(app)
 api = Api(app)
@@ -94,14 +98,16 @@ class TasksResource(Resource):
 
     @jwt_required()
     def post(self):
-        if request.get_json() is None:
-            return {"error": "No request provided."}, 400
+        uploaded_file = request.files['file']
+        filename = secure_filename(uploaded_file.filename)
+        if uploaded_file.filename != '':
+            uploaded_file.save(os.path.join(app.config['UPLOAD_PATH'], filename))
 
         new_task = Task(
-            filename = request.json['filename'],
+            filename = filename,
             timestap = datetime.now(),
             status = 'uploaded',
-            new_format = request.json['newFormat'],
+            new_format = 'newFormat',
             usuario = 1
         )
         db.session.add(new_task)
