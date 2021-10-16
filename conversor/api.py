@@ -1,5 +1,5 @@
 import os
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
 from flask_restful import Api, Resource
@@ -160,8 +160,18 @@ class TaskResource(Resource):
 
 class FileResource(Resource):
     @jwt_required()
-    def get(self, file):
-        return {"status": "ok"}, 200
+    def get(self):
+        try:
+            path_to_file = "ciletoMP3.mp3"
+
+            return send_file(
+                path_to_file,
+                mimetype="audio/mp3",
+                as_attachment=True,
+                attachment_filename="ciletoMP3.mp3")
+        except Exception as e:
+            return str(e)
+
 
 api.add_resource(HealthResource, '/api/auth/check')
 api.add_resource(AuthSignupResource, '/api/auth/signup')
