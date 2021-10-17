@@ -111,10 +111,10 @@ class TasksResource(Resource):
             uploaded_file.save(os.path.join(app.config['UPLOAD_PATH'], filename))
 
         new_task = Task(
-            filename = request.values["filename"],
+            filename = uploaded_file.filename,
             timestap = datetime.now(),
             status = 'uploaded',
-            new_format = uploaded_file.content_type,
+            new_format = request.values["new_format"],
             usuario = request.values["id_usuario"]
         )
         db.session.add(new_task)
