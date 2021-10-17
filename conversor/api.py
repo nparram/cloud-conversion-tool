@@ -104,18 +104,18 @@ class TasksResource(Resource):
 
     @jwt_required()
     def post(self):
-        """
+
         uploaded_file = request.files['file']
         filename = secure_filename(uploaded_file.filename)
         if uploaded_file.filename != '':
             uploaded_file.save(os.path.join(app.config['UPLOAD_PATH'], filename))
-        """
+
         new_task = Task(
-            filename = request.json["filename"],
+            filename = request.values["filename"],
             timestap = datetime.now(),
             status = 'uploaded',
-            new_format = request.json["new_format"],
-            usuario = request.json["id_usuario"]
+            new_format = uploaded_file.content_type,
+            usuario = request.values["id_usuario"]
         )
         db.session.add(new_task)
         try:
