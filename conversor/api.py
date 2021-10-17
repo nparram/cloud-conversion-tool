@@ -7,9 +7,12 @@ from flask_jwt_extended import JWTManager, create_access_token, jwt_required
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime
 from werkzeug.utils import secure_filename
+from pydub import AudioSegment
+
+from conversor.logic.Convert import Convert
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg2://test:test@db/test'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg2://test:test@localhost:5432/test'
 db = SQLAlchemy(app)
 ma = Marshmallow(app)
 app.config["JWT_SECRET_KEY"] = "cloud-conversor-jwt"
@@ -19,19 +22,27 @@ app.config['MAX_CONTENT_LENGTH'] = 1024 * 1024 * 1024
 jwt = JWTManager(app)
 api = Api(app)
 
+
 class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     filename = db.Column(db.String(50))
-    timestap = db.Column(db.DateTime)
+    timestamp = db.Column(db.DateTime)
     status = db.Column(db.String(50))
     new_format = db.Column(db.String(50))
+    format = db.Column(db.String(50))
+    origin_path = db.Column(db.String(50))
+    convert_path = db.Column(db.String(50))
     usuario = db.Column(db.Integer, db.ForeignKey("user.id"))
+
 
 class TaskSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
-        fields = ("id", "filename", "timestap","status","new_format")
+        fields = ("id", "filename", "timestamp", "status", "new_format", "format", "origin_path", "convert_path")
+
+
 task_schema = TaskSchema()
 tasks_schema = TaskSchema(many=True)
+
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -45,8 +56,10 @@ class UserSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         fields = ("id", "username", "email")
 
+
 user_schema = UserSchema()
 users_schema = UserSchema(many=True)
+
 
 class AuthSignupResource(Resource):
     def post(self):
@@ -57,9 +70,9 @@ class AuthSignupResource(Resource):
             return {"error": "password1 and password2 are not equal."}, 400
 
         new_user = User(
-            username = request.json['username'],
-            password = request.json['password1'],
-            email = request.json['email']
+            username=request.json['username'],
+            password=request.json['password1'],
+            email=request.json['email']
         )
         db.session.add(new_user)
         try:
@@ -70,13 +83,14 @@ class AuthSignupResource(Resource):
 
         return user_schema.dump(new_user)
 
+
 class AuthLoginResource(Resource):
     def post(self):
         if request.get_json() is None:
             return {"error": "No request provided."}, 400
 
         user = User.query.filter(User.username == request.json["username"],
-                                       User.password == request.json["password"]).first()
+                                 User.password == request.json["password"]).first()
         db.session.commit()
         if user is None:
             return {"error": "User does not exist"}, 404
@@ -84,9 +98,32 @@ class AuthLoginResource(Resource):
             token = create_access_token(identity=user.email)
             return {"success": "Successful login.", "token": token}
 
+
 class HealthResource(Resource):
     def get(self):
         return {"status": "UP"}, 200
+
+
+class ProcessTask(Resource):
+
+    def post(self):
+        tasks = db.session.query(Task).filter(Task.status == 'uploaded').all()
+        for task in tasks:
+            convert = Convert()
+            timestampName = datetime.now().strftime("%Y%m%d%H%M%S")
+            convert_path = os.path.splitext(task.origin_path)[0] + \
+                           ((timestampName[:7]) if len(timestampName) < 7 else timestampName) + "." + task.new_format
+            convert.convert_generic(task.origin_path, convert_path)
+            task.convert_path = convert_path
+            task.status = 'processed'
+            try:
+                db.session.commit()
+            except IntegrityError:
+                db.session.rollback()
+                return {"error": "Task is already registered."}, 409
+        response = [task_schema.dump(t) for t in tasks]
+        return jsonify(response)
+
 
 class TasksResource(Resource):
     @jwt_required()
@@ -96,11 +133,10 @@ class TasksResource(Resource):
         db.session.commit()
         response = [task_schema.dump(t) for t in tasks]
         return jsonify(response)"""
-        usuario=User.query.get_or_404(request.json["id_usuario"])
+        usuario = User.query.get_or_404(request.json["id_usuario"])
         db.session.commit()
         response = [task_schema.dump(t) for t in usuario.tasks]
         return jsonify(response)
-
 
     @jwt_required()
     def post(self):
@@ -111,11 +147,11 @@ class TasksResource(Resource):
             uploaded_file.save(os.path.join(app.config['UPLOAD_PATH'], filename))
 
         new_task = Task(
-            filename = uploaded_file.filename,
-            timestap = datetime.now(),
-            status = 'uploaded',
-            new_format = request.values["new_format"],
-            usuario = request.values["id_usuario"]
+            filename=uploaded_file.filename,
+            timestamp=datetime.now(),
+            status='uploaded',
+            new_format=request.values["new_format"],
+            usuario=request.values["id_usuario"]
         )
         db.session.add(new_task)
         try:
@@ -126,10 +162,11 @@ class TasksResource(Resource):
 
         return {"success": "Task was successfully created"}, 200
 
+
 class TaskResource(Resource):
     @jwt_required()
     def get(self, id_task):
-        task=Task.query.get_or_404(id_task)
+        task = Task.query.get_or_404(id_task)
         return task_schema.dump(task)
 
     @jwt_required()
@@ -166,6 +203,49 @@ class TaskResource(Resource):
 
         return {"Success": "Task was successfully deleted"}, 200
 
+
+class Convert:
+
+    def convert_generic(self, orig_song, dest_song):
+        os.system('ffmpeg -loglevel %s -i \"%s\"  \"%s\"' % ('fatal', orig_song, dest_song))
+
+    def convert_mp3_to_wav(self, orig_song, dest_song):
+        song = AudioSegment.from_mp3(orig_song)
+        song.export(dest_song, format="wav")
+
+    def convert_mp3_to_wma(self, orig_song, dest_song):
+        os.system('ffmpeg -loglevel %s -i \"%s\" -acodec libmp3lame \"%s\"' % ('fatal', orig_song, dest_song))
+
+    def convert_mp3_to_wav(self, orig_song, dest_song):
+        song = AudioSegment.from_mp3(orig_song)
+        song.export(dest_song, format="wav")
+
+    # OGG Files
+    def convert_ogg_to_wav(self, orig_song, dest_song):
+        song = AudioSegment.from_ogg(orig_song)
+        song.export(dest_song, format="wav")
+
+    def convert_ogg_to_mp3(self, orig_song, dest_song):
+        song = AudioSegment.from_ogg(orig_song)
+        song.export(dest_song, format="mp3")
+
+    # WAV Files
+    def convert_wav_to_mp3(self, orig_song, dest_song):
+        song = AudioSegment.from_wav(orig_song)
+        song.export(dest_song, format="mp3")
+
+    def convert_wav_to_ogg(self, orig_song, dest_song):
+        song = AudioSegment.from_wav(orig_song)
+        song.export(dest_song, format="ogg")
+
+    def convert_wav_to_ogg(self, orig_song, dest_song):
+        song = AudioSegment.from_wav(orig_song)
+        song.export(dest_song, format="ogg")
+
+
+# MP3 - ACC - OGG - WAV – WMA
+
+
 class FileResource(Resource):
     @jwt_required()
     def get(self):
@@ -187,7 +267,7 @@ api.add_resource(AuthLoginResource, '/api/auth/login')
 api.add_resource(TasksResource, '/api/tasks')
 api.add_resource(TaskResource, '/api/tasks/<int:id_task>')
 api.add_resource(FileResource, '/api/files')
+api.add_resource(ProcessTask, '/api/process')
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', ssl_context='adhoc')
-
