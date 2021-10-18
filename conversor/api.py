@@ -148,6 +148,8 @@ class TasksResource(Resource):
 
         new_task = Task(
             filename=uploaded_file.filename,
+            format=uploaded_file.content_type,
+            origin_path=request.values["origin_path"],
             timestamp=datetime.now(),
             status='uploaded',
             new_format=request.values["new_format"],
