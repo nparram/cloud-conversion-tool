@@ -8,7 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from datetime import datetime
 from werkzeug.utils import secure_filename
 from pydub import AudioSegment
-
+import smtplib, ssl
 from conversor.logic.Convert import Convert
 
 app = Flask(__name__)
@@ -261,6 +261,26 @@ class FileResource(Resource):
                 attachment_filename="ciletoMP3.mp3")
         except Exception as e:
             return str(e)
+
+
+class EmailSend:
+
+    def send(self, receiver_email):
+        port = 465  # For SSL
+        password = "contrasena2021"
+        sender_email = "micorreonube2021@gmail.com"
+        message = """\
+        Subject: Cloud Conversion Tool Update
+
+        We hope this message finds you well, your File was succesfully converted. Thanks for using the Cloud conversion tool"""
+
+        # Send email here
+        # Create a secure SSL context
+        context = ssl.create_default_context()
+
+        with smtplib.SMTP_SSL("smtp.gmail.com", port, context=context) as server:
+            server.login(sender_email, password)
+            server.sendmail(sender_email, receiver_email, message)
 
 
 api.add_resource(HealthResource, '/api/auth/check')
