@@ -114,14 +114,14 @@ class ProcessTask(Resource):
                            ((timestampName[:10]) if len(timestampName) < 10 else timestampName) + "." + task.new_format
             convert.convert_generic(task.origin_path, convert_path)
             task.convert_path = convert_path
-            task.status = 'processed'
-            enviar = EmailSend()
-            enviar.send("stationfile@gmail.com")
+            task.status = 'processed'            
             try:
                 db.session.commit()
             except IntegrityError:
                 db.session.rollback()
                 return {"error": "Task is already registered."}, 409
+            enviar = EmailSend()
+            enviar.send("stationfile@gmail.com")
         response = [task_schema.dump(t) for t in tasks]
         return jsonify(response)
 
