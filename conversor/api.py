@@ -9,14 +9,13 @@ from datetime import datetime
 from werkzeug.utils import secure_filename
 from pydub import AudioSegment
 import smtplib, ssl
-from conversor.logic.Convert import Convert
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg2://test:test@db/test'
 db = SQLAlchemy(app)
 ma = Marshmallow(app)
 app.config["JWT_SECRET_KEY"] = "cloud-conversor-jwt"
-app.config['UPLOAD_PATH'] = '/files/uploads'
+app.config['UPLOAD_PATH'] = '/files'
 app.config['MAX_CONTENT_LENGTH'] = 1024 * 1024 * 1024
 
 jwt = JWTManager(app)
@@ -111,11 +110,13 @@ class ProcessTask(Resource):
         for task in tasks:
             convert = Convert()
             timestampName = datetime.now().strftime("%Y%m%d%H%M%S")
-            convert_path = os.path.splitext(task.origin_path)[0] + \
-                           ((timestampName[:7]) if len(timestampName) < 7 else timestampName) + "." + task.new_format
+            convert_path = app.config['UPLOAD_PATH'] + "/" + os.path.splitext(task.filename)[0] + \
+                           ((timestampName[:10]) if len(timestampName) < 10 else timestampName) + "." + task.new_format
             convert.convert_generic(task.origin_path, convert_path)
             task.convert_path = convert_path
             task.status = 'processed'
+            enviar = EmailSend()
+            enviar.send("stationfile@gmail.com")
             try:
                 db.session.commit()
             except IntegrityError:
@@ -143,13 +144,19 @@ class TasksResource(Resource):
 
         uploaded_file = request.files['file']
         filename = secure_filename(uploaded_file.filename)
+        timestampName = datetime.now().strftime("%Y%m%d%H%M%S")
+        name = os.path.splitext(filename)[0] + \
+                       ((timestampName[:12]) if len(timestampName) < 12 else timestampName) + os.path.splitext(filename)[1]
+        origin_path = app.config['UPLOAD_PATH'] + "/" + name 
+
+
         if uploaded_file.filename != '':
-            uploaded_file.save(os.path.join(app.config['UPLOAD_PATH'], filename))
+            uploaded_file.save(os.path.join(app.config['UPLOAD_PATH'], name))
 
         new_task = Task(
             filename=uploaded_file.filename,
             format=uploaded_file.content_type,
-            origin_path=request.values["origin_path"],
+            origin_path=origin_path,
             timestamp=datetime.now(),
             status='uploaded',
             new_format=request.values["new_format"],
@@ -250,15 +257,16 @@ class Convert:
 
 class FileResource(Resource):
     @jwt_required()
-    def get(self):
+    def get(self, id_task):
         try:
-            path_to_file = "ciletoMP3.mp3"
+            task = Task.query.get_or_404(id_task)
+            path_to_file = task.convert_path
 
             return send_file(
                 path_to_file,
-                mimetype="audio/mp3",
+                mimetype="audio/" + task.new_format,
                 as_attachment=True,
-                attachment_filename="ciletoMP3.mp3")
+                attachment_filename=os.path.splitext(task.filename)[0]+ "." + task.new_format)
         except Exception as e:
             return str(e)
 
@@ -288,7 +296,7 @@ api.add_resource(AuthSignupResource, '/api/auth/signup')
 api.add_resource(AuthLoginResource, '/api/auth/login')
 api.add_resource(TasksResource, '/api/tasks')
 api.add_resource(TaskResource, '/api/tasks/<int:id_task>')
-api.add_resource(FileResource, '/api/files')
+api.add_resource(FileResource, '/api/files/<int:id_task>')
 api.add_resource(ProcessTask, '/api/process')
 
 if __name__ == '__main__':
