@@ -1,5 +1,9 @@
 
 FROM python:3
+RUN apt-get -y update
+RUN apt-get install -y ffmpeg
+RUN apt-get update
+RUN apt-get install nano
 RUN mkdir /backend
 WORKDIR /backend
 ADD requirements.txt /backend/
