@@ -120,8 +120,10 @@ class ProcessTask(Resource):
             except IntegrityError:
                 db.session.rollback()
                 return {"error": "Task is already registered."}, 409
-            enviar = EmailSend()
-            enviar.send("stationfile@gmail.com")
+            
+            if request is not None and request.json["send_email"] is not None:
+                enviar = EmailSend()
+                enviar.send("stationfile@gmail.com")
         response = [task_schema.dump(t) for t in tasks]
         return jsonify(response)
 
