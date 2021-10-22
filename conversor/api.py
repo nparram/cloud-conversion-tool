@@ -181,11 +181,11 @@ class TaskResource(Resource):
     @jwt_required()
     def put(self, id_task):
         task = Task.query.get_or_404(id_task, "Task not exists")
-        '''
+
         if task.status == 'processed':
-            # TODO: ELIMINAR ARCHIVO YA PROCESADO
-            task.filename        
-        '''
+            if os.path.exists(task.convert_path):
+                os.remove(task.convert_path)
+
         task.new_format = request.json["newFormat"]
         task.status = 'uploaded'
 
@@ -260,13 +260,18 @@ class FileResource(Resource):
     def get(self, id_task):
         try:
             task = Task.query.get_or_404(id_task)
-            path_to_file = task.convert_path
+            if task.status == 'uploaded':
+                path_to_file = task.origin_path
+                format = task.format
+            else:
+                path_to_file = task.convert_path
+                format = task.new_format
 
             return send_file(
                 path_to_file,
-                mimetype="audio/" + task.new_format,
+                mimetype="audio/" + format,
                 as_attachment=True,
-                attachment_filename=os.path.splitext(task.filename)[0]+ "." + task.new_format)
+                attachment_filename=os.path.splitext(task.filename)[0]+ "." + format)
         except Exception as e:
             return str(e)
 
