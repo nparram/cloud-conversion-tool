@@ -132,3 +132,5 @@ dmypy.json
 files/
 pgdata/
 /pgdata
+# idea IDE
+.idea/
