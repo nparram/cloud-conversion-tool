@@ -39,7 +39,7 @@ class Task(db.Model):
 
 class TaskSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
-        fields = ("id", "filename", "timestamp", "status", "new_format", "format", "origin_path", "convert_path")
+        fields = ("id", "filename", "timestamp", "status", "new_format", "format", "origin_path", "convert_path", "timeProces")
 
 
 task_schema = TaskSchema()
@@ -128,9 +128,9 @@ class ProcessTask(Resource):
                 db.session.rollback()
                 return {"error": "Task is already registered."}, 409
 
-            if request is not None and request.json["send_email"] is not None:
-                enviar = EmailSend()
-                enviar.send("stationfile@gmail.com")
+            #if request is not None and request.json["send_email"] is not None:
+            #enviar = EmailSend()
+            #enviar.send("stationfile@gmail.com")
         response = [task_schema.dump(t) for t in tasks]
         return jsonify(response)
 
