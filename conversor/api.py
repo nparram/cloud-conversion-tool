@@ -121,6 +121,10 @@ class ProcessTask(Resource):
             except IntegrityError:
                 db.session.rollback()
                 return {"error": "Task is already registered."}, 409
+
+            if request is not None and request.json["send_email"] is not None:
+                enviar = EmailSend()
+                enviar.send("stationfile@gmail.com")
         response = [task_schema.dump(t) for t in tasks]
         return jsonify(response)
 
@@ -128,11 +132,8 @@ class ProcessTask(Resource):
 class TasksResource(Resource):
     @jwt_required()
     def get(self):
-        """
-        tasks = Task.query.all()
-        db.session.commit()
-        response = [task_schema.dump(t) for t in tasks]
-        return jsonify(response)"""
+        if request.get_json() is None:
+            return {"error": "No request provided."}, 400
         usuario = User.query.get_or_404(request.json["id_usuario"])
         db.session.commit()
         response = [task_schema.dump(t) for t in usuario.tasks]
@@ -179,12 +180,14 @@ class TaskResource(Resource):
 
     @jwt_required()
     def put(self, id_task):
+        if request.get_json() is None:
+            return {"error": "No request provided."}, 400
         task = Task.query.get_or_404(id_task, "Task not exists")
-        '''
+
         if task.status == 'processed':
-            # TODO: ELIMINAR ARCHIVO YA PROCESADO
-            task.filename        
-        '''
+            if os.path.exists(task.convert_path):
+                os.remove(task.convert_path)
+
         task.new_format = request.json["newFormat"]
         task.status = 'uploaded'
 
@@ -259,13 +262,18 @@ class FileResource(Resource):
     def get(self, id_task):
         try:
             task = Task.query.get_or_404(id_task)
-            path_to_file = task.convert_path
+            if task.status == 'uploaded':
+                path_to_file = task.origin_path
+                format = task.format
+            else:
+                path_to_file = task.convert_path
+                format = task.new_format
 
             return send_file(
                 path_to_file,
-                mimetype="audio/" + task.new_format,
+                mimetype="audio/" + format,
                 as_attachment=True,
-                attachment_filename=os.path.splitext(task.filename)[0]+ "." + task.new_format)
+                attachment_filename=os.path.splitext(task.filename)[0]+ "." + format)
         except Exception as e:
             return str(e)
 
@@ -294,7 +302,7 @@ api.add_resource(HealthResource, '/api/auth/check')
 api.add_resource(AuthSignupResource, '/api/auth/signup')
 api.add_resource(AuthLoginResource, '/api/auth/login')
 api.add_resource(TasksResource, '/api/tasks')
-api.add_resource(TaskResource, '/api/tasks/<int:id_task>')
+api.add_resource(TaskResource, '/api/task/<int:id_task>')
 api.add_resource(FileResource, '/api/files/<int:id_task>')
 api.add_resource(ProcessTask, '/api/process')
 
