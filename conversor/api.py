@@ -154,13 +154,14 @@ class TasksResource(Resource):
         uploaded_file = request.files['file']
         filename = secure_filename(uploaded_file.filename)
         timestampName = datetime.now().strftime("%Y%m%d%H%M%S")
+        ramdom_name_id = str(random.randint(0,22))
         name = os.path.splitext(filename)[0] + \
                        ((timestampName[:12]) if len(timestampName) < 12 else timestampName) + os.path.splitext(filename)[1]
-        origin_path = app.config['UPLOAD_PATH'] + "/" +str(random.randint(0,22)) + name
+        origin_path = app.config['UPLOAD_PATH'] + "/" + ramdom_name_id + name
 
 
         if uploaded_file.filename != '':
-            uploaded_file.save(os.path.join(app.config['UPLOAD_PATH'],str(random.randint(0,22)) +  name))
+            uploaded_file.save(os.path.join(app.config['UPLOAD_PATH'],ramdom_name_id +  name))
 
         new_task = Task(
             filename=uploaded_file.filename,
