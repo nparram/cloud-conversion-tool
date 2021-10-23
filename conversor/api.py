@@ -116,7 +116,10 @@ class ProcessTask(Resource):
             convert_path = app.config['UPLOAD_PATH'] + "/" + str(random.randint(0,100)) + os.path.splitext(task.filename)[0] + \
                            ((timestampName[:10]) if len(timestampName) < 10 else timestampName) + "." + task.new_format
             timestampBegin = datetime.now()
-            convert.convert_generic(task.origin_path, convert_path)
+            if task.format == "mp3" and task.new_format == "ogg":
+                convert.convert_mp3_to_ogg(task.origin_path, convert_path)
+            else:            
+                convert.convert_generic(task.origin_path, convert_path)                
             task.convert_path = convert_path
             timestampEnd = datetime.now()
             diff = timestampEnd - timestampBegin
@@ -233,9 +236,9 @@ class Convert:
     def convert_mp3_to_wma(self, orig_song, dest_song):
         os.system('ffmpeg -loglevel %s -i \"%s\" -acodec libmp3lame \"%s\"' % ('fatal', orig_song, dest_song))
 
-    def convert_mp3_to_wav(self, orig_song, dest_song):
+    def convert_mp3_to_ogg(self, orig_song, dest_song):
         song = AudioSegment.from_mp3(orig_song)
-        song.export(dest_song, format="wav")
+        song.export(dest_song, format="ogg")        
 
     # OGG Files
     def convert_ogg_to_wav(self, orig_song, dest_song):
