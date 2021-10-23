@@ -10,12 +10,14 @@ from datetime import datetime
 from werkzeug.utils import secure_filename
 from pydub import AudioSegment
 import smtplib, ssl
+from datetime import timedelta
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg2://test:test@db/test'
 db = SQLAlchemy(app)
 ma = Marshmallow(app)
 app.config["JWT_SECRET_KEY"] = "cloud-conversor-jwt"
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=6)
 app.config['UPLOAD_PATH'] = '/files'
 app.config['MAX_CONTENT_LENGTH'] = 1024 * 1024 * 1024
 
@@ -307,4 +309,4 @@ api.add_resource(FileResource, '/api/files/<int:id_task>')
 api.add_resource(ProcessTask, '/api/process')
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', ssl_context='adhoc')
+    app.run(debug=False, host='0.0.0.0', ssl_context='adhoc')
