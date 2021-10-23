@@ -32,7 +32,7 @@ class Task(db.Model):
     origin_path = db.Column(db.String(50))
     convert_path = db.Column(db.String(50))
     usuario = db.Column(db.Integer, db.ForeignKey("user.id"))
-
+    timeProces = db.Column(db.Integer)
 
 class TaskSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
@@ -112,8 +112,11 @@ class ProcessTask(Resource):
             timestampName = datetime.now().strftime("%Y%m%d%H%M%S")
             convert_path = app.config['UPLOAD_PATH'] + "/" + os.path.splitext(task.filename)[0] + \
                            ((timestampName[:10]) if len(timestampName) < 10 else timestampName) + "." + task.new_format
+            timestampBegin = datetime.now()
             convert.convert_generic(task.origin_path, convert_path)
             task.convert_path = convert_path
+            timestampEnd = datetime.now()
+            task.timeProces = timestampEnd - timestampBegin
             task.status = 'processed'            
             try:
                 db.session.commit()
