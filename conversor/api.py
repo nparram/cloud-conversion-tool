@@ -1,4 +1,5 @@
 import os
+import random
 from flask import Flask, request, jsonify, send_file
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
@@ -9,12 +10,14 @@ from datetime import datetime
 from werkzeug.utils import secure_filename
 from pydub import AudioSegment
 import smtplib, ssl
+from datetime import timedelta
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg2://test:test@db/test'
 db = SQLAlchemy(app)
 ma = Marshmallow(app)
 app.config["JWT_SECRET_KEY"] = "cloud-conversor-jwt"
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=6)
 app.config['UPLOAD_PATH'] = '/files'
 app.config['MAX_CONTENT_LENGTH'] = 1024 * 1024 * 1024
 
@@ -110,20 +113,24 @@ class ProcessTask(Resource):
         for task in tasks:
             convert = Convert()
             timestampName = datetime.now().strftime("%Y%m%d%H%M%S")
-            convert_path = app.config['UPLOAD_PATH'] + "/" + os.path.splitext(task.filename)[0] + \
+            convert_path = app.config['UPLOAD_PATH'] + "/" + str(random.randint(0,100)) + os.path.splitext(task.filename)[0] + \
                            ((timestampName[:10]) if len(timestampName) < 10 else timestampName) + "." + task.new_format
             timestampBegin = datetime.now()
             convert.convert_generic(task.origin_path, convert_path)
             task.convert_path = convert_path
+<<<<<<< HEAD
             timestampEnd = datetime.now()
             task.timeProces = timestampEnd - timestampBegin
             task.status = 'processed'            
+=======
+            task.status = 'processed'
+>>>>>>> de5830da18b44c2c7cf299de2936b0ba4ba1e54b
             try:
                 db.session.commit()
             except IntegrityError:
                 db.session.rollback()
                 return {"error": "Task is already registered."}, 409
-            
+
             if request is not None and request.json["send_email"] is not None:
                 enviar = EmailSend()
                 enviar.send("stationfile@gmail.com")
@@ -149,11 +156,11 @@ class TasksResource(Resource):
         timestampName = datetime.now().strftime("%Y%m%d%H%M%S")
         name = os.path.splitext(filename)[0] + \
                        ((timestampName[:12]) if len(timestampName) < 12 else timestampName) + os.path.splitext(filename)[1]
-        origin_path = app.config['UPLOAD_PATH'] + "/" + name 
+        origin_path = app.config['UPLOAD_PATH'] + "/" +str(random.randint(0,22)) + name
 
 
         if uploaded_file.filename != '':
-            uploaded_file.save(os.path.join(app.config['UPLOAD_PATH'], name))
+            uploaded_file.save(os.path.join(app.config['UPLOAD_PATH'],str(random.randint(0,22)) +  name))
 
         new_task = Task(
             filename=uploaded_file.filename,
@@ -309,4 +316,4 @@ api.add_resource(FileResource, '/api/files/<int:id_task>')
 api.add_resource(ProcessTask, '/api/process')
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', ssl_context='adhoc')
+    app.run(debug=False, host='0.0.0.0', ssl_context='adhoc')
