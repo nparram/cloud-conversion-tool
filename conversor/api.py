@@ -118,13 +118,9 @@ class ProcessTask(Resource):
             timestampBegin = datetime.now()
             convert.convert_generic(task.origin_path, convert_path)
             task.convert_path = convert_path
-<<<<<<< HEAD
             timestampEnd = datetime.now()
             task.timeProces = timestampEnd - timestampBegin
-            task.status = 'processed'            
-=======
             task.status = 'processed'
->>>>>>> de5830da18b44c2c7cf299de2936b0ba4ba1e54b
             try:
                 db.session.commit()
             except IntegrityError:
