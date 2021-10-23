@@ -1,4 +1,5 @@
 import os
+import random
 from flask import Flask, request, jsonify, send_file
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
@@ -110,18 +111,16 @@ class ProcessTask(Resource):
         for task in tasks:
             convert = Convert()
             timestampName = datetime.now().strftime("%Y%m%d%H%M%S")
-            convert_path = app.config['UPLOAD_PATH'] + "/" + os.path.splitext(task.filename)[0] + \
+            convert_path = app.config['UPLOAD_PATH'] + "/" + str(random.randint(0,100)) + os.path.splitext(task.filename)[0] + \
                            ((timestampName[:10]) if len(timestampName) < 10 else timestampName) + "." + task.new_format
             convert.convert_generic(task.origin_path, convert_path)
             task.convert_path = convert_path
-            task.status = 'processed'            
+            task.status = 'processed'
             try:
                 db.session.commit()
             except IntegrityError:
                 db.session.rollback()
                 return {"error": "Task is already registered."}, 409
-            enviar = EmailSend()
-            enviar.send("stationfile@gmail.com")
         response = [task_schema.dump(t) for t in tasks]
         return jsonify(response)
 
@@ -147,11 +146,11 @@ class TasksResource(Resource):
         timestampName = datetime.now().strftime("%Y%m%d%H%M%S")
         name = os.path.splitext(filename)[0] + \
                        ((timestampName[:12]) if len(timestampName) < 12 else timestampName) + os.path.splitext(filename)[1]
-        origin_path = app.config['UPLOAD_PATH'] + "/" + name 
+        origin_path = app.config['UPLOAD_PATH'] + "/" +str(random.randint(0,22)) + name
 
 
         if uploaded_file.filename != '':
-            uploaded_file.save(os.path.join(app.config['UPLOAD_PATH'], name))
+            uploaded_file.save(os.path.join(app.config['UPLOAD_PATH'],str(random.randint(0,22)) +  name))
 
         new_task = Task(
             filename=uploaded_file.filename,
