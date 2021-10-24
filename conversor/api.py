@@ -317,4 +317,4 @@ api.add_resource(FileResource, '/api/files/<int:id_task>')
 api.add_resource(ProcessTask, '/api/process')
 
 if __name__ == '__main__':
-    app.run(debug=False, host='0.0.0.0', ssl_context='adhoc')
+    app.run(debug=False, host='0.0.0.0', ssl_context='adhoc', threaded=True)
