@@ -39,7 +39,7 @@ class Task(db.Model):
 
 class TaskSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
-        fields = ("id", "filename", "timestamp", "status", "new_format", "format", "origin_path", "convert_path")
+        fields = ("id", "filename", "timestamp", "status", "new_format", "format", "origin_path", "convert_path", "timeProces")
 
 
 task_schema = TaskSchema()
@@ -116,7 +116,10 @@ class ProcessTask(Resource):
             convert_path = app.config['UPLOAD_PATH'] + "/" + str(random.randint(0,100)) + os.path.splitext(task.filename)[0] + \
                            ((timestampName[:10]) if len(timestampName) < 10 else timestampName) + "." + task.new_format
             timestampBegin = datetime.now()
-            convert.convert_generic(task.origin_path, convert_path)
+            if task.format == "mp3" and task.new_format == "ogg":
+                convert.convert_mp3_to_ogg(task.origin_path, convert_path)
+            else:            
+                convert.convert_generic(task.origin_path, convert_path)                
             task.convert_path = convert_path
             timestampEnd = datetime.now()
             diff = timestampEnd - timestampBegin
@@ -128,9 +131,9 @@ class ProcessTask(Resource):
                 db.session.rollback()
                 return {"error": "Task is already registered."}, 409
 
-            if request is not None and request.json["send_email"] is not None:
-                enviar = EmailSend()
-                enviar.send("stationfile@gmail.com")
+            #if request is not None and request.json["send_email"] is not None:
+            #enviar = EmailSend()
+            #enviar.send("stationfile@gmail.com")
         response = [task_schema.dump(t) for t in tasks]
         return jsonify(response)
 
@@ -151,13 +154,14 @@ class TasksResource(Resource):
         uploaded_file = request.files['file']
         filename = secure_filename(uploaded_file.filename)
         timestampName = datetime.now().strftime("%Y%m%d%H%M%S")
+        ramdom_name_id = str(random.randint(0,22))
         name = os.path.splitext(filename)[0] + \
                        ((timestampName[:12]) if len(timestampName) < 12 else timestampName) + os.path.splitext(filename)[1]
-        origin_path = app.config['UPLOAD_PATH'] + "/" +str(random.randint(0,22)) + name
+        origin_path = app.config['UPLOAD_PATH'] + "/" + ramdom_name_id + name
 
 
         if uploaded_file.filename != '':
-            uploaded_file.save(os.path.join(app.config['UPLOAD_PATH'],str(random.randint(0,22)) +  name))
+            uploaded_file.save(os.path.join(app.config['UPLOAD_PATH'],ramdom_name_id +  name))
 
         new_task = Task(
             filename=uploaded_file.filename,
@@ -235,9 +239,9 @@ class Convert:
     def convert_mp3_to_wma(self, orig_song, dest_song):
         os.system('ffmpeg -loglevel %s -i \"%s\" -acodec libmp3lame \"%s\"' % ('fatal', orig_song, dest_song))
 
-    def convert_mp3_to_wav(self, orig_song, dest_song):
+    def convert_mp3_to_ogg(self, orig_song, dest_song):
         song = AudioSegment.from_mp3(orig_song)
-        song.export(dest_song, format="wav")
+        song.export(dest_song, format="ogg")        
 
     # OGG Files
     def convert_ogg_to_wav(self, orig_song, dest_song):
@@ -315,4 +319,4 @@ api.add_resource(FileResource, '/api/files/<int:id_task>')
 api.add_resource(ProcessTask, '/api/process')
 
 if __name__ == '__main__':
-    app.run(debug=False, host='0.0.0.0', ssl_context='adhoc')
+    app.run(debug=False, host='0.0.0.0', ssl_context='adhoc', threaded=True)
