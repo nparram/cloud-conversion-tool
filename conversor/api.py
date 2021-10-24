@@ -195,6 +195,8 @@ class TaskResource(Resource):
                 os.remove(task.convert_path)
 
         task.new_format = request.json["newFormat"]
+        task.timeProces = 0
+        task.convert_path = ''
         task.status = 'uploaded'
 
         try:
