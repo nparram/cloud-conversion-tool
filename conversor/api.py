@@ -123,7 +123,7 @@ class ProcessTask(Resource):
             task.convert_path = convert_path
             timestampEnd = datetime.now()
             diff = timestampEnd - timestampBegin
-            task.timeProces = diff.microseconds
+            task.timeProces = int(diff.total_seconds() * 1000) # milliseconds
             task.status = 'processed'
             try:
                 db.session.commit()
