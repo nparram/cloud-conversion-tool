@@ -16,7 +16,7 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg2://test:test@db/test'
 db = SQLAlchemy(app)
 ma = Marshmallow(app)
-app.config["JWT_SECRET_KEY"] = "cloud-conversor-jwt"
+app.config["JWT_SECRET_KEY"] = "cloud-coversor-jwt"
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=6)
 app.config['UPLOAD_PATH'] = '/files'
 app.config['MAX_CONTENT_LENGTH'] = 1024 * 1024 * 1024
@@ -105,37 +105,6 @@ class HealthResource(Resource):
     def get(self):
         return {"status": "UP"}, 200
 
-
-class ProcessTask(Resource):
-
-    def post(self):
-        tasks = db.session.query(Task).filter(Task.status == 'uploaded').all()
-        for task in tasks:
-            convert = Convert()
-            timestampName = datetime.now().strftime("%Y%m%d%H%M%S")
-            convert_path = app.config['UPLOAD_PATH'] + "/" + str(random.randint(0,100)) + os.path.splitext(task.filename)[0] + \
-                           ((timestampName[:10]) if len(timestampName) < 10 else timestampName) + "." + task.new_format
-            timestampBegin = datetime.now()
-            if task.format == "mp3" and task.new_format == "ogg":
-                convert.convert_mp3_to_ogg(task.origin_path, convert_path)
-            else:            
-                convert.convert_generic(task.origin_path, convert_path)                
-            task.convert_path = convert_path
-            timestampEnd = datetime.now()
-            diff = timestampEnd - timestampBegin
-            task.timeProces = int(diff.total_seconds() * 1000) # milliseconds
-            task.status = 'processed'
-            try:
-                db.session.commit()
-            except IntegrityError:
-                db.session.rollback()
-                return {"error": "Task is already registered."}, 409
-
-            #if request is not None and request.json["send_email"] is not None:
-            #enviar = EmailSend()
-            #enviar.send("stationfile@gmail.com")
-        response = [task_schema.dump(t) for t in tasks]
-        return jsonify(response)
 
 
 class TasksResource(Resource):
@@ -316,7 +285,6 @@ api.add_resource(AuthLoginResource, '/api/auth/login')
 api.add_resource(TasksResource, '/api/tasks')
 api.add_resource(TaskResource, '/api/task/<int:id_task>')
 api.add_resource(FileResource, '/api/files/<int:id_task>')
-api.add_resource(ProcessTask, '/api/process')
 
 if __name__ == '__main__':
     app.run(debug=False, host='0.0.0.0', ssl_context='adhoc', threaded=True)

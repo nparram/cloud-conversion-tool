@@ -1,0 +1,19 @@
+version: "3.2"
+services:
+  web-server:
+    volumes:
+      - ./web_server/:/mnt/
+    build: ./web_server
+    working_dir: /backend
+    command: sh run.sh
+    environment:
+      STAGE: test
+      SQLALCHEMY_DATABASE_URI: postgresql+psycopg2://test:test@db/test
+    networks:
+      - default
+    ports:
+      - 5000:5000
+
+
+
+
