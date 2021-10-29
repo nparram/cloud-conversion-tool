@@ -7,8 +7,7 @@ services:
     working_dir: /backend
     command: sh run.sh
     environment:
-      STAGE: test
-      SQLALCHEMY_DATABASE_URI: postgresql+psycopg2://test:test@db/test
+      SQLALCHEMY_DATABASE_URI: 'mysql+pymysql://admin:contrasena@database-1.cvpdimy2bamy.us-east-1.rds.amazonaws.com/database-1'
     networks:
       - default
     ports:

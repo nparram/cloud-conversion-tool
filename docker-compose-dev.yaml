@@ -7,6 +7,8 @@ services:
     build: ./web_server
     working_dir: /backend
     command: sh run.sh
+    environment:
+      SQLALCHEMY_DATABASE_URI: 'mysql+pymysql://convertion:password@db/convertion'
     networks:
       - default
     ports:
@@ -21,6 +23,8 @@ services:
     build: ./worker
     working_dir: /backend
     command: sh run.sh
+    environment:
+      SQLALCHEMY_DATABASE_URI: 'mysql+pymysql://convertion:password@db/convertion'
     networks:
       - default
     ports:
