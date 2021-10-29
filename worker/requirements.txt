@@ -6,5 +6,5 @@ SQLAlchemy
 marshmallow-sqlalchemy
 flask-jwt-extended
 pyopenssl
-psycopg2
 pydub
+flask-mysql

@@ -13,7 +13,7 @@ import smtplib, ssl
 from datetime import timedelta
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg2://test:test@db/test'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://convertion:password@db/convertion'
 db = SQLAlchemy(app)
 ma = Marshmallow(app)
 app.config["JWT_SECRET_KEY"] = "cloud-coversor-jwt"

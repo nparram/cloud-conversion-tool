@@ -8,12 +8,11 @@ from flask_jwt_extended import JWTManager, create_access_token, jwt_required
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime
 from werkzeug.utils import secure_filename
-from pydub import AudioSegment
 import smtplib, ssl
 from datetime import timedelta
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg2://test:test@db/test'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://convertion:password@db/convertion'
 db = SQLAlchemy(app)
 ma = Marshmallow(app)
 app.config["JWT_SECRET_KEY"] = "cloud-coversor-jwt"

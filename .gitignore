@@ -134,3 +134,4 @@ pgdata/
 /pgdata
 # idea IDE
 .idea/
+dbdata/
