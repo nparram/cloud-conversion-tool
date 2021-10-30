@@ -3,6 +3,7 @@ services:
   web-server:
     volumes:
       - ./web_server/:/mnt/
+      - /nfs/general/:/files/
     build: ./web_server
     working_dir: /backend
     command: sh run.sh

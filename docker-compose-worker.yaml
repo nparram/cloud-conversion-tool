@@ -4,6 +4,7 @@ services:
   worker:
     volumes:
       - ./worker/:/mnt/
+      - /nfs/general/:/files/
     build: ./worker
     working_dir: /backend
     command: sh run.sh
