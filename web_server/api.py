@@ -13,7 +13,7 @@ from datetime import timedelta
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = str(os.environ.get('SQLALCHEMY_DATABASE_URI'))
-db = SQLAlchemy(app, engine_options={"pool_size": 65})
+db = SQLAlchemy(app, engine_options={"pool_size": 6})
 ma = Marshmallow(app)
 app.config["JWT_SECRET_KEY"] = "cloud-coversor-jwt"
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=6)
