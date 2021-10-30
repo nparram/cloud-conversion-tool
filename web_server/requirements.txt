@@ -8,3 +8,4 @@ flask-jwt-extended
 pyopenssl
 pydub
 flask-mysql
+gunicorn
