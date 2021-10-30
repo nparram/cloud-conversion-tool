@@ -2,6 +2,7 @@ version: "3.2"
 services:
 
   worker:
+    restart: always
     volumes:
       - ./worker/:/mnt/
       - /nfs/general/:/files/
