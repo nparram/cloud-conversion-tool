@@ -109,7 +109,13 @@ class HealthResource(Resource):
     def get(self):
         return {"status": "UP"}, 200
 
-
+def upload_file(file_name, bucket):
+        object_name = file_name
+        s3_client = boto3.client('s3', aws_access_key_id="ASIA2FMN6ZJIHGDPFGXK",
+                                 aws_secret_access_key="Ngvb2eLWshZX3NDbENFv/oU//jqimHBaN8mXgxXd",
+                                 aws_session_token="FwoGZXIvYXdzEDsaDDIuAHYn/BmQP4PZ+iLKAY6yPgb9wWz1baSwjGJbCAg1FHOMn3ARMC92O4fwGWpuPfY9cpMgcVx5nbYHHIIIQ1uHzB+uOF8q422iER9RN4Qrgn52A/UjEKX5ecZNYoY8DKnedd+SRJ32o6FxdqLhvJkO5UI3wkqZShaSU+06MiyjvmUxsNJwoFpgmBUaq6CiKfKl8bNPxvrMQ7vV0qGnKO4nylZ7+Lrq0lbTxSpq5Xn3FG7xbR9pfrzuwagetWpInkdDjtIzLdcsMfWmc6vAZXzVXYeTj5vsq/EolpjhjAYyLWPzP4WfMLSHmiF0aCqLhA0Ue5G6G9jr5Z9lbQF09BqJZaIAMxy/usIG1SzCXw==")
+        response = s3_client.upload_file(file_name, bucket, object_name)
+        return response
 
 class TasksResource(Resource):
     @jwt_required()
@@ -120,14 +126,6 @@ class TasksResource(Resource):
         db.session.commit()
         response = [task_schema.dump(t) for t in usuario.tasks]
         return jsonify(response)
-
-    def upload_file(file_name, bucket):
-        object_name = file_name
-        s3_client = boto3.client('s3', aws_access_key_id="ASIA2FMN6ZJIHGDPFGXK",
-                                 aws_secret_access_key="Ngvb2eLWshZX3NDbENFv/oU//jqimHBaN8mXgxXd",
-                                 aws_session_token="FwoGZXIvYXdzEDsaDDIuAHYn/BmQP4PZ+iLKAY6yPgb9wWz1baSwjGJbCAg1FHOMn3ARMC92O4fwGWpuPfY9cpMgcVx5nbYHHIIIQ1uHzB+uOF8q422iER9RN4Qrgn52A/UjEKX5ecZNYoY8DKnedd+SRJ32o6FxdqLhvJkO5UI3wkqZShaSU+06MiyjvmUxsNJwoFpgmBUaq6CiKfKl8bNPxvrMQ7vV0qGnKO4nylZ7+Lrq0lbTxSpq5Xn3FG7xbR9pfrzuwagetWpInkdDjtIzLdcsMfWmc6vAZXzVXYeTj5vsq/EolpjhjAYyLWPzP4WfMLSHmiF0aCqLhA0Ue5G6G9jr5Z9lbQF09BqJZaIAMxy/usIG1SzCXw==")
-        response = s3_client.upload_file(file_name, bucket, object_name)
-        return response
 
     @jwt_required()
     def post(self):
@@ -142,8 +140,9 @@ class TasksResource(Resource):
 
 
         if uploaded_file.filename != '':
-            uploaded_file.save(os.path.join(app.config['UPLOAD_PATH'],ramdom_name_id +  name))
-            upload_file(f"uploads/{uploaded_file.filename}", BUCKET)
+            filename_path = os.path.join(app.config['UPLOAD_PATH'],ramdom_name_id +  name)
+            uploaded_file.save(filename_path)
+            upload_file(filename_path, BUCKET)
 
         new_task = Task(
             filename=uploaded_file.filename,

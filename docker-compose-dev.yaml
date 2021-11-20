@@ -8,7 +8,7 @@ services:
     working_dir: /backend
     command: sh run.sh
     environment:
-      SQLALCHEMY_DATABASE_URI: 'mysql+pymysql://convertion:password@db:3307/convertion'
+      SQLALCHEMY_DATABASE_URI: 'mysql+pymysql://convertion:password@db/convertion'
     networks:
       - default
     ports:
@@ -24,7 +24,7 @@ services:
     working_dir: /backend
     command: sh run.sh
     environment:
-      SQLALCHEMY_DATABASE_URI: 'mysql+pymysql://convertion:password@db:3307/convertion'
+      SQLALCHEMY_DATABASE_URI: 'mysql+pymysql://convertion:password@db/convertion'
     networks:
       - default
     ports:
@@ -40,7 +40,7 @@ services:
       MYSQL_PASSWORD: 'password'
       MYSQL_ROOT_PASSWORD: 'password'
     ports:
-      - '3307:3306'
+      - '3306:3306'
     expose:
       - '3306'
       # Where our data will be persisted
