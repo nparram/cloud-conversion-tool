@@ -1,6 +1,6 @@
 import os
 import random
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify, send_file, render_template, redirect
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
 from flask_restful import Api, Resource
@@ -10,6 +10,8 @@ from datetime import datetime
 from werkzeug.utils import secure_filename
 import smtplib, ssl
 from datetime import timedelta
+import boto3
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = str(os.environ.get('SQLALCHEMY_DATABASE_URI'))
@@ -19,6 +21,9 @@ app.config["JWT_SECRET_KEY"] = "cloud-coversor-jwt"
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=6)
 app.config['UPLOAD_PATH'] = '/files'
 app.config['MAX_CONTENT_LENGTH'] = 1024 * 1024 * 1024
+UPLOAD_FOLDER = "uploads"
+BUCKET = "bucket-miso-2021"
+
 
 jwt = JWTManager(app)
 api = Api(app)
@@ -116,6 +121,14 @@ class TasksResource(Resource):
         response = [task_schema.dump(t) for t in usuario.tasks]
         return jsonify(response)
 
+    def upload_file(file_name, bucket):
+        object_name = file_name
+        s3_client = boto3.client('s3', aws_access_key_id="ASIA2FMN6ZJIHGDPFGXK",
+                                 aws_secret_access_key="Ngvb2eLWshZX3NDbENFv/oU//jqimHBaN8mXgxXd",
+                                 aws_session_token="FwoGZXIvYXdzEDsaDDIuAHYn/BmQP4PZ+iLKAY6yPgb9wWz1baSwjGJbCAg1FHOMn3ARMC92O4fwGWpuPfY9cpMgcVx5nbYHHIIIQ1uHzB+uOF8q422iER9RN4Qrgn52A/UjEKX5ecZNYoY8DKnedd+SRJ32o6FxdqLhvJkO5UI3wkqZShaSU+06MiyjvmUxsNJwoFpgmBUaq6CiKfKl8bNPxvrMQ7vV0qGnKO4nylZ7+Lrq0lbTxSpq5Xn3FG7xbR9pfrzuwagetWpInkdDjtIzLdcsMfWmc6vAZXzVXYeTj5vsq/EolpjhjAYyLWPzP4WfMLSHmiF0aCqLhA0Ue5G6G9jr5Z9lbQF09BqJZaIAMxy/usIG1SzCXw==")
+        response = s3_client.upload_file(file_name, bucket, object_name)
+        return response
+
     @jwt_required()
     def post(self):
 
@@ -130,6 +143,7 @@ class TasksResource(Resource):
 
         if uploaded_file.filename != '':
             uploaded_file.save(os.path.join(app.config['UPLOAD_PATH'],ramdom_name_id +  name))
+            upload_file(f"uploads/{uploaded_file.filename}", BUCKET)
 
         new_task = Task(
             filename=uploaded_file.filename,

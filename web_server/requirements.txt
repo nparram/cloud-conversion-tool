@@ -9,3 +9,5 @@ pyopenssl
 pydub
 flask-mysql
 gunicorn
+boto3
+awscli
