@@ -11,6 +11,8 @@ from werkzeug.utils import secure_filename
 from pydub import AudioSegment
 import smtplib, ssl
 from datetime import timedelta
+import boto3
+import botocore
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = str(os.environ.get('SQLALCHEMY_DATABASE_URI'))
@@ -21,9 +23,30 @@ app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=6)
 app.config['UPLOAD_PATH'] = '/files'
 app.config['MAX_CONTENT_LENGTH'] = 1024 * 1024 * 1024
 
+BUCKET = str(os.environ.get('BUCKET_NAME'))
+AWS_ACCESS_KEY_ID = str(os.environ.get('AWS_ACCESS_KEY'))
+AWS_SECRET_ACCESS_KEY = str(os.environ.get('AWS_SECRET_ACCESS'))
+AWS_SESSION_TOKEN = str(os.environ.get('AWS_SESSION_TOKEN'))
+
 jwt = JWTManager(app)
 api = Api(app)
 
+
+def download_file(file_name, bucket):
+    object_name = file_name
+    s3_client = boto3.client('s3', aws_access_key_id=AWS_ACCESS_KEY_ID,
+                             aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+                             aws_session_token=AWS_SESSION_TOKEN)
+    with open(file_name, 'wb') as f:
+        s3_client.download_fileobj(bucket, object_name, f)
+
+def upload_file(file_name, bucket):
+    object_name = file_name
+    s3_client = boto3.client('s3', aws_access_key_id=AWS_ACCESS_KEY_ID,
+                             aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+                             aws_session_token=AWS_SESSION_TOKEN)
+    response = s3_client.upload_file(file_name, bucket, object_name)
+    return response
 
 class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -70,6 +93,10 @@ class HealthResource(Resource):
 
 class ProcessTask(Resource):
 
+    def get(self):
+        download_file(request.json["origin_path"], BUCKET)
+        return {"status": "downloaded"}, 200
+
     def post(self):
         tasks = db.session.query(Task).filter(Task.status == 'uploaded').all()
         for task in tasks:
@@ -78,10 +105,20 @@ class ProcessTask(Resource):
             convert_path = app.config['UPLOAD_PATH'] + "/" + str(random.randint(0,100)) + os.path.splitext(task.filename)[0] + \
                            ((timestampName[:10]) if len(timestampName) < 10 else timestampName) + "." + task.new_format
             timestampBegin = datetime.now()
+            ## descargar archivo original para procesar
+            try:
+                download_file(task.origin_path, BUCKET)
+            except botocore.exceptions.ClientError as error:
+                raise error
+
             if task.format == "mp3" and task.new_format == "ogg":
                 convert.convert_mp3_to_ogg(task.origin_path, convert_path)
             else:            
-                convert.convert_generic(task.origin_path, convert_path)                
+                convert.convert_generic(task.origin_path, convert_path) 
+
+            ## subir a S3 el archivo procesado al nuevo formato
+            upload_file(convert_path, BUCKET)
+
             task.convert_path = convert_path
             timestampEnd = datetime.now()
             diff = timestampEnd - timestampBegin
@@ -92,14 +129,14 @@ class ProcessTask(Resource):
             except IntegrityError:
                 db.session.rollback()
                 return {"error": "Task is already registered."}, 409
-
+            os.remove(task.origin_path)
+            os.remove(convert_path)
+            
             #if request is not None and request.json["send_email"] is not None:
             #enviar = EmailSend()
             #enviar.send("stationfile@gmail.com")
         response = [task_schema.dump(t) for t in tasks]
         return jsonify(response)
-
-
 
 
 class Convert:

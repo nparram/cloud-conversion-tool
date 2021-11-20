@@ -22,7 +22,10 @@ app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=6)
 app.config['UPLOAD_PATH'] = '/files'
 app.config['MAX_CONTENT_LENGTH'] = 1024 * 1024 * 1024
 UPLOAD_FOLDER = "uploads"
-BUCKET = "bucket-miso-2021"
+BUCKET = str(os.environ.get('BUCKET_NAME'))
+AWS_ACCESS_KEY_ID = str(os.environ.get('AWS_ACCESS_KEY'))
+AWS_SECRET_ACCESS_KEY = str(os.environ.get('AWS_SECRET_ACCESS'))
+AWS_SESSION_TOKEN = str(os.environ.get('AWS_SESSION_TOKEN'))
 
 
 jwt = JWTManager(app)
@@ -109,13 +112,14 @@ class HealthResource(Resource):
     def get(self):
         return {"status": "UP"}, 200
 
+
 def upload_file(file_name, bucket):
-        object_name = file_name
-        s3_client = boto3.client('s3', aws_access_key_id="ASIA2FMN6ZJIHGDPFGXK",
-                                 aws_secret_access_key="Ngvb2eLWshZX3NDbENFv/oU//jqimHBaN8mXgxXd",
-                                 aws_session_token="FwoGZXIvYXdzEDsaDDIuAHYn/BmQP4PZ+iLKAY6yPgb9wWz1baSwjGJbCAg1FHOMn3ARMC92O4fwGWpuPfY9cpMgcVx5nbYHHIIIQ1uHzB+uOF8q422iER9RN4Qrgn52A/UjEKX5ecZNYoY8DKnedd+SRJ32o6FxdqLhvJkO5UI3wkqZShaSU+06MiyjvmUxsNJwoFpgmBUaq6CiKfKl8bNPxvrMQ7vV0qGnKO4nylZ7+Lrq0lbTxSpq5Xn3FG7xbR9pfrzuwagetWpInkdDjtIzLdcsMfWmc6vAZXzVXYeTj5vsq/EolpjhjAYyLWPzP4WfMLSHmiF0aCqLhA0Ue5G6G9jr5Z9lbQF09BqJZaIAMxy/usIG1SzCXw==")
-        response = s3_client.upload_file(file_name, bucket, object_name)
-        return response
+    object_name = file_name
+    s3_client = boto3.client('s3', aws_access_key_id=AWS_ACCESS_KEY_ID,
+                             aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+                             aws_session_token=AWS_SESSION_TOKEN)
+    response = s3_client.upload_file(file_name, bucket, object_name)
+    return response
 
 class TasksResource(Resource):
     @jwt_required()
@@ -143,6 +147,7 @@ class TasksResource(Resource):
             filename_path = os.path.join(app.config['UPLOAD_PATH'],ramdom_name_id +  name)
             uploaded_file.save(filename_path)
             upload_file(filename_path, BUCKET)
+            os.remove(filename_path)
 
         new_task = Task(
             filename=uploaded_file.filename,

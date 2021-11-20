@@ -1,4 +1,4 @@
-version: "3.2"
+version: "3.4"
 services:
   web-server:
     volumes:
@@ -7,8 +7,8 @@ services:
     build: ./web_server
     working_dir: /backend
     command: sh run.sh
-    environment:
-      SQLALCHEMY_DATABASE_URI: 'mysql+pymysql://convertion:password@db/convertion'
+    env_file:
+      - 'variables.env'
     networks:
       - default
     ports:
@@ -23,8 +23,8 @@ services:
     build: ./worker
     working_dir: /backend
     command: sh run.sh
-    environment:
-      SQLALCHEMY_DATABASE_URI: 'mysql+pymysql://convertion:password@db/convertion'
+    env_file:
+      - 'variables.env'
     networks:
       - default
     ports:

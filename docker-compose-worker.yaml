@@ -9,8 +9,8 @@ services:
     build: ./worker
     working_dir: /backend
     command: sh run.sh
-    environment:
-      SQLALCHEMY_DATABASE_URI: 'mysql+pymysql://admin:contrasena@database-1.cvpdimy2bamy.us-east-1.rds.amazonaws.com/database_1'
+    env_file:
+      - 'variables.env'
     networks:
       - default
     ports:
