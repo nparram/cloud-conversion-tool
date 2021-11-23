@@ -26,6 +26,9 @@ BUCKET = str(os.environ.get('BUCKET_NAME'))
 AWS_ACCESS_KEY_ID = str(os.environ.get('AWS_ACCESS_KEY'))
 AWS_SECRET_ACCESS_KEY = str(os.environ.get('AWS_SECRET_ACCESS'))
 AWS_SESSION_TOKEN = str(os.environ.get('AWS_SESSION_TOKEN'))
+REGION_NAME = str(os.environ.get('REGION_NAME'))
+QUEUE_NAME = str(os.environ.get('QUEUE_NAME'))
+
 
 
 jwt = JWTManager(app)
@@ -121,6 +124,18 @@ def upload_file(file_name, bucket):
     response = s3_client.upload_file(file_name, bucket, object_name)
     return response
 
+def send_message(message, attributes):
+    client = boto3.resource('sqs',
+                    region_name=REGION_NAME,
+                    aws_access_key_id=AWS_ACCESS_KEY_ID, 
+                    aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+                    aws_session_token=AWS_SESSION_TOKEN)
+
+    queue = client.get_queue_by_name(QueueName=QUEUE_NAME)
+    response = queue.send_message(MessageAttributes=attributes, MessageBody=message)
+    return response
+
+
 class TasksResource(Resource):
     @jwt_required()
     def get(self):
@@ -159,8 +174,10 @@ class TasksResource(Resource):
             usuario=request.values["id_usuario"]
         )
         db.session.add(new_task)
+
         try:
             db.session.commit()
+            send_message(attributes={'idTask': {'DataType': 'Number', 'StringValue': str(new_task.id)}}, message='message body')
         except IntegrityError:
             db.session.rollback()
             return {"error": "Task is already registered."}, 409
