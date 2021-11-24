@@ -124,7 +124,7 @@ def upload_file(file_name, bucket):
     response = s3_client.upload_file(file_name, bucket, object_name)
     return response
 
-def send_message(message, attributes):
+def send_message(message):
     client = boto3.resource('sqs',
                     region_name=REGION_NAME,
                     aws_access_key_id=AWS_ACCESS_KEY_ID, 
@@ -132,7 +132,7 @@ def send_message(message, attributes):
                     aws_session_token=AWS_SESSION_TOKEN)
 
     queue = client.get_queue_by_name(QueueName=QUEUE_NAME)
-    response = queue.send_message(MessageAttributes=attributes, MessageBody=message)
+    response = queue.send_message(MessageBody=message)
     return response
 
 
@@ -177,7 +177,7 @@ class TasksResource(Resource):
 
         try:
             db.session.commit()
-            send_message(attributes={'idTask': {'DataType': 'Number', 'StringValue': str(new_task.id)}}, message='message body')
+            send_message(message=str(new_task.id))
         except IntegrityError:
             db.session.rollback()
             return {"error": "Task is already registered."}, 409

@@ -27,6 +27,9 @@ BUCKET = str(os.environ.get('BUCKET_NAME'))
 AWS_ACCESS_KEY_ID = str(os.environ.get('AWS_ACCESS_KEY'))
 AWS_SECRET_ACCESS_KEY = str(os.environ.get('AWS_SECRET_ACCESS'))
 AWS_SESSION_TOKEN = str(os.environ.get('AWS_SESSION_TOKEN'))
+REGION_NAME = str(os.environ.get('REGION_NAME'))
+QUEUE_NAME = str(os.environ.get('QUEUE_NAME'))
+QUEUE_URL = str(os.environ.get('QUEUE_URL'))
 
 jwt = JWTManager(app)
 api = Api(app)
@@ -47,6 +50,40 @@ def upload_file(file_name, bucket):
                              aws_session_token=AWS_SESSION_TOKEN)
     response = s3_client.upload_file(file_name, bucket, object_name)
     return response
+
+
+def receive_message():
+    sqs = boto3.client('sqs', region_name=REGION_NAME,
+                    aws_access_key_id=AWS_ACCESS_KEY_ID, 
+                    aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+                    aws_session_token=AWS_SESSION_TOKEN)
+
+    response = sqs.receive_message(
+        QueueUrl=QUEUE_URL,
+        AttributeNames=[
+            'SentTimestamp'
+        ],
+        MaxNumberOfMessages=1,
+        MessageAttributeNames=[
+            'All'
+        ],
+        VisibilityTimeout=30,
+        WaitTimeSeconds=0
+    )
+    message = response['Messages'][0]
+    return message
+
+def delete_message(message):
+    sqs = boto3.client('sqs', region_name=REGION_NAME,
+                    aws_access_key_id=AWS_ACCESS_KEY_ID, 
+                    aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+                    aws_session_token=AWS_SESSION_TOKEN)
+    receipt_handle = message['ReceiptHandle']
+    sqs.delete_message(
+        QueueUrl=QUEUE_URL,
+        ReceiptHandle=receipt_handle
+    )
+    
 
 class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -94,48 +131,54 @@ class HealthResource(Resource):
 class ProcessTask(Resource):
 
     def get(self):
-        download_file(request.json["origin_path"], BUCKET)
-        return {"status": "downloaded"}, 200
+        #download_file(request.json["origin_path"], BUCKET)
+        message = receive_message()
+        #attr = message["MessageAttributes"]
+        return {"status": message}, 200
 
     def post(self):
-        tasks = db.session.query(Task).filter(Task.status == 'uploaded').all()
-        for task in tasks:
-            convert = Convert()
-            timestampName = datetime.now().strftime("%Y%m%d%H%M%S")
-            convert_path = app.config['UPLOAD_PATH'] + "/" + str(random.randint(0,100)) + os.path.splitext(task.filename)[0] + \
-                           ((timestampName[:10]) if len(timestampName) < 10 else timestampName) + "." + task.new_format
-            timestampBegin = datetime.now()
-            ## descargar archivo original para procesar
-            try:
-                download_file(task.origin_path, BUCKET)
-            except botocore.exceptions.ClientError as error:
-                raise error
+        #tasks = db.session.query(Task).filter(Task.status == 'uploaded').all()
+        message = receive_message()
+        task = Task.query.get_or_404(message["Body"])
+        #for task in tasks:
+        
+        convert = Convert()
+        timestampName = datetime.now().strftime("%Y%m%d%H%M%S")
+        convert_path = app.config['UPLOAD_PATH'] + "/" + str(random.randint(0,100)) + os.path.splitext(task.filename)[0] + \
+                        ((timestampName[:10]) if len(timestampName) < 10 else timestampName) + "." + task.new_format
+        timestampBegin = datetime.now()
+        ## descargar archivo original para procesar
+        try:
+            download_file(task.origin_path, BUCKET)
+        except botocore.exceptions.ClientError as error:
+            raise error
 
-            if task.format == "mp3" and task.new_format == "ogg":
-                convert.convert_mp3_to_ogg(task.origin_path, convert_path)
-            else:            
-                convert.convert_generic(task.origin_path, convert_path) 
+        if task.format == "mp3" and task.new_format == "ogg":
+            convert.convert_mp3_to_ogg(task.origin_path, convert_path)
+        else:            
+            convert.convert_generic(task.origin_path, convert_path) 
 
-            ## subir a S3 el archivo procesado al nuevo formato
-            upload_file(convert_path, BUCKET)
+        ## subir a S3 el archivo procesado al nuevo formato
+        upload_file(convert_path, BUCKET)
 
-            task.convert_path = convert_path
-            timestampEnd = datetime.now()
-            diff = timestampEnd - timestampBegin
-            task.timeProces = int(diff.total_seconds() * 1000) # milliseconds
-            task.status = 'processed'
-            try:
-                db.session.commit()
-            except IntegrityError:
-                db.session.rollback()
-                return {"error": "Task is already registered."}, 409
-            os.remove(task.origin_path)
-            os.remove(convert_path)
+        task.convert_path = convert_path
+        timestampEnd = datetime.now()
+        diff = timestampEnd - timestampBegin
+        task.timeProces = int(diff.total_seconds() * 1000) # milliseconds
+        task.status = 'processed'
+        try:
+            db.session.commit()
+            delete_message(message)
+        except IntegrityError:
+            db.session.rollback()
+            return {"error": "Task is already registered."}, 409
+        os.remove(task.origin_path)
+        os.remove(convert_path)
             
             #if request is not None and request.json["send_email"] is not None:
             #enviar = EmailSend()
             #enviar.send("stationfile@gmail.com")
-        response = [task_schema.dump(t) for t in tasks]
+        response = [task_schema.dump(task)]
         return jsonify(response)
 
 
