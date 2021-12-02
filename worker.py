@@ -20,7 +20,7 @@ db = SQLAlchemy(app)
 ma = Marshmallow(app)
 app.config["JWT_SECRET_KEY"] = "cloud-coversor-jwt"
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=6)
-app.config['UPLOAD_PATH'] = '/files'
+app.config['UPLOAD_PATH'] = './'
 app.config['MAX_CONTENT_LENGTH'] = 1024 * 1024 * 1024
 
 BUCKET = str(os.environ.get('BUCKET_NAME'))
