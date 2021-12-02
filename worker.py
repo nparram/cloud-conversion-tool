@@ -250,4 +250,4 @@ api.add_resource(HealthResource, '/api/auth/check')
 api.add_resource(ProcessTask, '/api/process')
 
 if __name__ == '__main__':
-    app.run(debug=False, host='0.0.0.0', ssl_context='adhoc', threaded=True)
+    app.run(debug=True)
