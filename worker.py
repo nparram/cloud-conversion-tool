@@ -250,4 +250,5 @@ api.add_resource(HealthResource, '/api/auth/check')
 api.add_resource(ProcessTask, '/api/process')
 
 if __name__ == '__main__':
+    db.create_all()
     app.run(debug=True)
