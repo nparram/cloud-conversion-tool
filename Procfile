@@ -1,1 +1,1 @@
-webserver: gunicorn -w 5 --threads 3 wsgi:app
+web: gunicorn api:app
