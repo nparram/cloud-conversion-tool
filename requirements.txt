@@ -10,4 +10,4 @@ pydub
 flask-mysql
 boto3
 awscli
-gunicorn
+gunicorn 
