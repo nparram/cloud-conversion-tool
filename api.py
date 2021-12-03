@@ -155,7 +155,7 @@ class TasksResource(Resource):
         ramdom_name_id = str(random.randint(0,22))
         name = os.path.splitext(filename)[0] + \
                        ((timestampName[:12]) if len(timestampName) < 12 else timestampName) + os.path.splitext(filename)[1]
-        origin_path = app.config['UPLOAD_PATH'] + "/" + ramdom_name_id + name
+        origin_path = app.config['UPLOAD_PATH'] + ramdom_name_id + name
 
 
         if uploaded_file.filename != '':
